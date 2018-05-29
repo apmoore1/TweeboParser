@@ -27,35 +27,47 @@ def test_output():
     lines of the Sherlock holmes text the parser failed on.
     '''
 
-    this_dir = Path(__file__).absolute().parent
-    run_file = this_dir.joinpath('..', 'run.sh')
+    def get_sha_digest(file_path):
+        '''
+        :param file_path: Path to the file you want to get an SHA-1 digest \
+        from the content of the file.
+        :type file_path: Path
+        :return: SHA-1 digest of the content within the file at file_path
+        :rtype: str
+        '''
+
+        file_hash = sha.new()
+        with file_path.open('r', encoding='utf-8') as lines:
+            for line in lines:
+                file_hash.update(line.encode('utf-8'))
+        return file_hash.digest()
+
+    this_dir = Path(__file__).absolute().parent.resolve()
+    run_file = this_dir.joinpath('..', 'run.sh').resolve()
     sherlock_holmes_fp = this_dir.joinpath('test data',
                                            'sherlock_holmes_text_only.txt')
-    pred_file = this_dir.joinpath('test data', 'something.txt')
-    temp_dir = tempfile.mkdtemp()
-    try:
-        text_file_path = Path(temp_dir, 'text_file.txt')
-        result_file_path = Path(temp_dir, 'text_file.txt.predict')
-        print(str(sherlock_holmes_fp.resolve()))
-        print(str(text_file_path))
-        print('anything')
-        shutil.copyfile(str(sherlock_holmes_fp.resolve()),
-                        str(text_file_path))
-        sub_process_params = ['bash', str(run_file.resolve()),
-                              str(text_file_path.resolve())]
-        if subprocess.call(sub_process_params):
-            shutil.copy(str(result_file_path),
-                        str(pred_file))
+    gold_test_fp = this_dir.joinpath('test data',
+                                     'sherlock_holmes_text_only.txt.predict')
+    gold_test_digest = get_sha_digest(gold_test_fp)
 
-        else:
+    temp_dir_fp = tempfile.mkdtemp()
+    try:
+        text_fp = Path(temp_dir_fp, 'text_file.txt')
+        result_fp = Path(temp_dir_fp, 'text_file.txt.predict')
+        shutil.copyfile(str(sherlock_holmes_fp),
+                        str(text_fp))
+        sub_process_params = ['bash', str(run_file),
+                              str(text_fp)]
+        if subprocess.call(sub_process_params):
             raise SystemError('Could not run the Tweebo run script')
+        result_digest = get_sha_digest(result_fp)
+        assert result_digest == gold_test_digest
+
     except Exception as e:
-        print(temp_dir)
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir_fp)
         print(e.args)
         raise SystemError('Error during running the Tweebo run script')
     else:
-        print(temp_dir)
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir_fp)
 
-test_output()
+#test_output()
