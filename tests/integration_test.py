@@ -1,6 +1,8 @@
 '''
 Contains the following test functions:
-1. test_output -- Tests if the output of the new code base is the same as \
+1. test_get_sha_digest -- Tests that the method used to get an SHA-1 digest \
+works correctly by testing it on different and same files.
+2. test_output -- Tests if the output of the new code base is the same as \
 a stable code commit.
 '''
 
@@ -9,6 +11,47 @@ import tempfile
 import subprocess
 import shutil
 import sha
+
+
+def _get_sha_digest(file_path):
+    '''
+    :param file_path: Path to the file you want to get an SHA-1 digest \
+    from the content of the file.
+    :type file_path: Path
+    :return: SHA-1 digest of the content within the file at file_path
+    :rtype: str
+    '''
+
+    file_hash = sha.new()
+    with file_path.open('r', encoding='utf-8') as lines:
+        for line in lines:
+            file_hash.update(line.encode('utf-8'))
+    return file_hash.digest()
+
+
+def test_get_sha_digest():
+    '''
+    Tests if the _get_sha_digest method works correctly. The method returns \
+    an SHA-1 digest from the contents of the file path it was given.
+
+    Tests:
+    1. The copy of the text only sherlock holmes should have the same digest \
+    as the original it was copied from.
+    2. The sherlock holmes with the whitespace removed should have a \
+    different digest to that of the one with the whitespace still their.
+    '''
+
+    this_dir = Path(__file__).absolute().parent.resolve()
+    sherlock_fp = Path(this_dir, 'test data', 'sherlock_holmes_text_only.txt')
+    sherlock_copy_fp = Path(this_dir, 'test data',
+                            'sherlock_holmes_text_only_copy.txt')
+    sherlock_digest = _get_sha_digest(sherlock_fp)
+    sherlock_copy_digest = _get_sha_digest(sherlock_copy_fp)
+    assert sherlock_digest == sherlock_copy_digest
+
+    sherlock_diff_fp = Path(this_dir, 'test data', 'sherlock_holmes.txt')
+    sherlock_diff_digest = _get_sha_digest(sherlock_diff_fp)
+    assert sherlock_digest != sherlock_diff_digest
 
 
 def test_output():
@@ -27,28 +70,13 @@ def test_output():
     lines of the Sherlock holmes text the parser failed on.
     '''
 
-    def get_sha_digest(file_path):
-        '''
-        :param file_path: Path to the file you want to get an SHA-1 digest \
-        from the content of the file.
-        :type file_path: Path
-        :return: SHA-1 digest of the content within the file at file_path
-        :rtype: str
-        '''
-
-        file_hash = sha.new()
-        with file_path.open('r', encoding='utf-8') as lines:
-            for line in lines:
-                file_hash.update(line.encode('utf-8'))
-        return file_hash.digest()
-
     this_dir = Path(__file__).absolute().parent.resolve()
     run_file = this_dir.joinpath('..', 'run.sh').resolve()
     sherlock_holmes_fp = this_dir.joinpath('test data',
                                            'sherlock_holmes_text_only.txt')
     gold_test_fp = this_dir.joinpath('test data',
                                      'sherlock_holmes_text_only.txt.predict')
-    gold_test_digest = get_sha_digest(gold_test_fp)
+    gold_test_digest = _get_sha_digest(gold_test_fp)
 
     temp_dir_fp = tempfile.mkdtemp()
     try:
@@ -60,7 +88,7 @@ def test_output():
                               str(text_fp)]
         if subprocess.call(sub_process_params):
             raise SystemError('Could not run the Tweebo run script')
-        result_digest = get_sha_digest(result_fp)
+        result_digest = _get_sha_digest(result_fp)
         assert result_digest == gold_test_digest
 
     except Exception as e:
@@ -69,5 +97,3 @@ def test_output():
         raise SystemError('Error during running the Tweebo run script')
     else:
         shutil.rmtree(temp_dir_fp)
-
-#test_output()
