@@ -5,13 +5,9 @@ matrix:
       sudo: required
     - os: osx
       sudo: required
+
 compiler:
   - gcc
-
-os:
-  - linux
-  - osx
-
 
 script:
   - cd TBParser
