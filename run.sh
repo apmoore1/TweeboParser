@@ -37,7 +37,7 @@ if [ "$#" -ne 1 ]; then
 else
 
 mkdir -p working_dir
-
+echo "Python version: $(which python)"
 # Starting point:
 # -- Raw text tweets, one line per tweet.
 INPUT_FILE=$1
@@ -74,6 +74,3 @@ cd ${ROOT_DIR}
 cat ${WORKING_DIR}/test_predict > ${INPUT_FILE}.predict
 
 fi
-
-
-
