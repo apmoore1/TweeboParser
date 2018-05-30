@@ -119,8 +119,10 @@ def test_output():
 def process_data():
     this_dir = Path(__file__).absolute().parent.resolve()
     data_file = this_dir.joinpath('..', 'ark-tweet-nlp-0.3.2', 'data',
-                                  'twpos-data-v0.3', 'oct27.conll')
-    tweets_file = this_dir.joinpath('tweets.txt')
+                                  'twpos-data-v0.3', 'oct27.splits',
+                                  'oct27.train')
+    tweets_file = this_dir.joinpath('test data', 'tweets.txt')
+    count = 0
     with tweets_file.open('w', encoding='utf-8') as tweet_data:
         with data_file.open('r', encoding='utf-8') as lines:
             for line in lines:
@@ -130,3 +132,6 @@ def process_data():
                     tweet_data.write(u'{} '.format(word))
                 else:
                     tweet_data.write(u'\n')
+                    count += 1
+                    if count == 3:
+                        break
