@@ -6,6 +6,8 @@ matrix:
     - os: osx
       sudo: required
 
+language: cpp
+
 compiler:
   - gcc
 
