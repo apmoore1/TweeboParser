@@ -8,6 +8,7 @@ a stable code commit.
 
 from pathlib import Path
 import tempfile
+from traceback import format_exc
 import subprocess
 import shutil
 import sha
@@ -93,7 +94,7 @@ def test_output():
 
     except Exception as e:
         shutil.rmtree(temp_dir_fp)
-        print(e.args)
-        raise SystemError('Error during running the Tweebo run script')
+        raise SystemError('Error {} during running the Tweebo run script, '
+                          'Stack Trace:\n {}'.format(repr(e), format_exc()))
     else:
         shutil.rmtree(temp_dir_fp)
