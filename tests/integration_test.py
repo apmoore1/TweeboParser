@@ -30,6 +30,21 @@ def _get_sha_digest(file_path):
     return file_hash.digest()
 
 
+def _detailed_comparison(test_fp, gold_fp):
+
+    test_lines = list(test_fp.open('r', encoding='utf-8'))
+    gold_lines = list(gold_fp.open('r', encoding='utf-8'))
+
+    for index, gold_line in enumerate(gold_lines):
+        test_line = test_lines[index].strip()
+        gold_line = gold_line.strip()
+
+        if gold_line != test_line:
+            raise Exception('Test and Gold data not the same at line {}'
+                            '\nTest has following text: {}\n'
+                            'Gold has: {}'.format(index, test_line, gold_line))
+
+
 def test_get_sha_digest():
     '''
     Tests if the _get_sha_digest method works correctly. The method returns \
@@ -90,6 +105,7 @@ def test_output():
         if subprocess.call(sub_process_params):
             raise SystemError('Could not run the Tweebo run script')
         result_digest = _get_sha_digest(result_fp)
+        _detailed_comparison(result_fp, gold_test_fp)
         assert result_digest == gold_test_digest
 
     except Exception as e:
