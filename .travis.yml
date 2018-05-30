@@ -10,7 +10,4 @@ compiler:
   - gcc
 
 script:
-  - cd TBParser
-  - chmod +x install-sh
-  - ./install_deps.sh
-  - ./configure && make && make install
+  - echo "n" | ./install.sh
