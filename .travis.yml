@@ -1,15 +1,18 @@
-sudo: required
-dist: trusty
-
-language: cpp
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+    - os: osx
+      sudo: required
 compiler:
   - gcc
 
 os:
   - linux
   - osx
-  
-    
+
+
 script:
   - cd TBParser
   - chmod +x install-sh
