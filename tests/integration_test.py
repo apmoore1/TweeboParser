@@ -89,9 +89,9 @@ def test_output():
     this_dir = Path(__file__).absolute().parent.resolve()
     run_file = this_dir.joinpath('..', 'run.sh').resolve()
     sherlock_holmes_fp = this_dir.joinpath('test data',
-                                           'sherlock_holmes_text_only.txt')
+                                           'tweets.txt')
     gold_test_fp = this_dir.joinpath('test data',
-                                     'sherlock_holmes_text_only.txt.predict')
+                                     'tweets.txt.predict')
     gold_test_digest = _get_sha_digest(gold_test_fp)
 
     temp_dir_fp = tempfile.mkdtemp()
@@ -114,3 +114,19 @@ def test_output():
                           'Stack Trace:\n {}'.format(repr(e), format_exc()))
     else:
         shutil.rmtree(temp_dir_fp)
+
+
+def process_data():
+    this_dir = Path(__file__).absolute().parent.resolve()
+    data_file = this_dir.joinpath('..', 'ark-tweet-nlp-0.3.2', 'data',
+                                  'twpos-data-v0.3', 'oct27.conll')
+    tweets_file = this_dir.joinpath('tweets.txt')
+    with tweets_file.open('w', encoding='utf-8') as tweet_data:
+        with data_file.open('r', encoding='utf-8') as lines:
+            for line in lines:
+                line = line.strip()
+                if line:
+                    word = line.split()[0]
+                    tweet_data.write(u'{} '.format(word))
+                else:
+                    tweet_data.write(u'\n')
