@@ -1,17 +1,19 @@
+# TweeboParser
+
 Build status for Linux and Mac: [![Build Status](https://travis-ci.org/ikekonglp/TweeboParser.svg?branch=master)](https://travis-ci.org/ikekonglp/TweeboParser)
 
 ( If that's green and you still can't compile it succussfully, please first make sure you get the lastest gcc and cmake installed and running properly. :) )
 
-##NEWS
+## NEWS
 ```
 Aug 23, 2016 -- We add Travis CI to the project (on Linux and osx) -- check the Build Status on
-                top of this page. 
+                top of this page.
 June 5, 2016 -- You can skip the download of the pretrained models if you have done that properly.
-April 1, 2016 -- We support both Python2 and Python3 now! 
+April 1, 2016 -- We support both Python2 and Python3 now!
                  Big thanks to Nikhil Kini (https://nikhilnkini.wordpress.com/) who figured this out!
 Feb 5, 2016 -- Changing to c++11, we support both Ubuntu and MacOS now!
 ```
-##TweeboParser and Tweebank
+## TweeboParser and Tweebank
 
 We provide a dependency parser for English tweets, TweeboParser . The parser is trained on a subset of a new labeled corpus for 929 tweets (12,318 tokens) drawn from the POS-tagged tweet corpus of Owoputi et al. (2013) , Tweebank .
 
@@ -19,7 +21,7 @@ These were created by Lingpeng Kong, Nathan Schneider, Swabha Swayamdipta, Archn
 
 Thanks to Tweebank annotators: Waleed Ammar, Jason Baldridge, David Bamman, Dallas Card, Shay Cohen, Jesse Dodge, Jeffrey Flanigan, Dan Garrette, Lori Levin, Wang Ling, Bill McDowell, Michael Mordowanec, Brendan O’Connor, Rohan Ramanath, Yanchuan Sim, Liang Sun, Sam Thomson, and Dani Yogatama.
 
-##What TweeboParser does
+## What TweeboParser does
 Given a tweet, TweeboParser predicts its syntactic structure, represented by unlabeled dependencies. Since a tweet often contains more than one utterance, the output of TweeboParser will often be a multi-rooted graph over the tweet. Also, many elements in tweets have no syntactic function. These include, in many cases, hashtags, URLs, and emoticons. TweeboParser tries to exclude these tokens from the parse tree (grayed out in the example below).
 
 Please refer to the paper for more information.
@@ -65,15 +67,15 @@ Corresponding CoNLL format representation of the dependency tree above:
 
 
 
-##Compiling
+## Compiling
 
 ```
-Note: You will need the latest GCC, cmake, Java, Python to install and run this software.
+Note: You will need the latest GCC, cmake, Java, Python 2 to install and run this software.
 If you get into any problem, please send an email to lingpenk@cs.cmu.edu
 with the log from the command "./install.sh" and "./run.sh sample_input.txt" so that we can help.
 ```
 
-To compile the code, git clone the repository first 
+To compile the code, git clone the repository first
 
 ```
 > git clone https://github.com/ikekonglp/TweeboParser.git
@@ -88,7 +90,7 @@ Next, run the following command
 
 This will install TweeboParser and all its dependencies. Also, it will download the pretrained models for you. They are stored at http://www.cs.cmu.edu/~ark/TweetNLP/pretrained_models.tar.gz
 
-##Example of usage
+## Example of usage
 
 To run the TweeboParser on raw text input with one sentence per line (e.g. on the
 sample_input.txt):
@@ -106,7 +108,7 @@ The output file will be "sample_input.txt.predict" in the same directory as
 which contains the CoNLL format (http://ilk.uvt.nl/conll/#dataformat) output of the
 parse tree. (HEAD < 0 means the word is not included in the tree)
 
-##Directory Structure
+## Directory Structure
 ```
 ark-tweet-nlp		----	The Twitter POS Tagger (http://www.ark.cs.cmu.edu/TweetNLP/)
 pretrained_models	----	Tagging, token selection, brown clusters obtained from
@@ -124,7 +126,7 @@ run.sh			----	The bash script which runs the parser on raw inputs (see sec. 1.2)
 install.sh		----	The bash script which installs everything (see sec. 1.1).
 ```
 
-##Tweebank
+## Tweebank
 
 Most of TWEEBANK was built in a day by two dozen annotators, most of whom had only
 cursory training in the annotation scheme.
@@ -137,10 +139,10 @@ Raw_Data		----	The json format file which contains all the annotation we have.
 				only use the ones with the full annotation.)
 
 				The CoNLL format file contains all the full annotated data we
-				have, the MWE is pre-processed by first-order TurboParser 
+				have, the MWE is pre-processed by first-order TurboParser
 				trained on the Penn Treebank. (See the paper for more details.)
 ```
 
 ## Further reading:
-A Dependency Parser for Tweets 
+A Dependency Parser for Tweets
 Lingpeng Kong, Nathan Schneider, Swabha Swayamdipta, Archna Bhatia, Chris Dyer, and Noah A. Smith. In Proceedings of EMNLP 2014.
