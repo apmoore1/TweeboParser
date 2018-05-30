@@ -2,16 +2,7 @@ matrix:
   include:
     - os: linux
       dist: trusty
-      sudo: required
-      addons:
-        apt:
-          packages:
-            - cmake
-            - gcc
     - os: osx
-      sudo: required
-      before_install:
-        - brew install cmake
 
 language: cpp
 
