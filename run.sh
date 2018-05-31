@@ -30,10 +30,9 @@ TOKENSEL_DIR="${ROOT_DIR}/token_selection"
 MODEL_DIR="${ROOT_DIR}/pretrained_models"
 echo "$ROOT_DIR"
 
-# the temp directory used, within $ROOT_DIR
-# omit the -p parameter to create a temporal directory in the default location
-WORKING_DIR=`mktemp -d -p "$ROOT_DIR"`
-
+# the temp directory used for the working directory. This is created at
+# temp_dir e.g. /tmp
+WORKING_DIR=`mktemp -d`
 # check if tmp dir was created
 if [[ ! "$WORKING_DIR" || ! -d "$WORKING_DIR" ]]; then
   echo "Could not create temp dir"
