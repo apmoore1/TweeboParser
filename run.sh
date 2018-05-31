@@ -28,48 +28,64 @@ TAGGER_DIR="${ROOT_DIR}/ark-tweet-nlp-0.3.2"
 PARSER_DIR="${ROOT_DIR}/TBParser"
 TOKENSEL_DIR="${ROOT_DIR}/token_selection"
 MODEL_DIR="${ROOT_DIR}/pretrained_models"
-WORKING_DIR="${ROOT_DIR}/working_dir"
+echo "$ROOT_DIR"
+
+# the temp directory used, within $ROOT_DIR
+# omit the -p parameter to create a temporal directory in the default location
+WORKING_DIR=`mktemp -d -p "$ROOT_DIR"`
+
+# check if tmp dir was created
+if [[ ! "$WORKING_DIR" || ! -d "$WORKING_DIR" ]]; then
+  echo "Could not create temp dir"
+  exit 1
+fi
+
+# deletes the temp directory
+function cleanup {
+  rm -rf "$WORKING_DIR"
+  echo "Deleted temp working directory $WORKING_DIR"
+}
+# register the cleanup function to be called on the EXIT signal
+trap cleanup EXIT
+
 
 # To run the parser:
-
 if [ "$#" -ne 1 ]; then
     echo "Usage: ./run.sh [path_to_raw_input_file_one_sentence_a_line]"
 else
+  # Starting point:
+  # -- Raw text tweets, one line per tweet.
+  INPUT_FILE=$1
 
-mkdir -p working_dir
-# Starting point:
-# -- Raw text tweets, one line per tweet.
-INPUT_FILE=$1
+  # --> Run Twitter POS tagger on top of it. (Tokenization and Converting to CoNLL format along the way.)
+  ${SCRIPT_DIR}/tokenize_and_tag.sh ${ROOT_DIR} ${TAGGER_DIR} ${WORKING_DIR} ${MODEL_DIR} ${SCRIPT_DIR} ${INPUT_FILE}
 
-# --> Run Twitter POS tagger on top of it. (Tokenization and Converting to CoNLL format along the way.)
-${SCRIPT_DIR}/tokenize_and_tag.sh ${ROOT_DIR} ${TAGGER_DIR} ${WORKING_DIR} ${MODEL_DIR} ${SCRIPT_DIR} ${INPUT_FILE}
+  # --> Append Brown Clusters on the end of each word.
+  python ${SCRIPT_DIR}/AugumentBrownClusteringFeature46.py ${MODEL_DIR}/twitter_brown_clustering_full ${WORKING_DIR}/tagger.out N > ${WORKING_DIR}/tag.br.out
+  rm ${WORKING_DIR}/tagger.out
 
-# --> Append Brown Clusters on the end of each word.
-python ${SCRIPT_DIR}/AugumentBrownClusteringFeature46.py ${MODEL_DIR}/twitter_brown_clustering_full ${WORKING_DIR}/tagger.out N > ${WORKING_DIR}/tag.br.out
-rm ${WORKING_DIR}/tagger.out
-
-# --> Run Token Selection Tool to get the token selections appended on the end of each word.
-python ${TOKENSEL_DIR}/pipeline.py ${WORKING_DIR}/tag.br.out ${MODEL_DIR}/tokensel_weights > ${WORKING_DIR}/test
-rm ${WORKING_DIR}/tag.br.out
+  # --> Run Token Selection Tool to get the token selections appended on the end of each word.
+  python ${TOKENSEL_DIR}/pipeline.py ${WORKING_DIR}/tag.br.out ${MODEL_DIR}/tokensel_weights > ${WORKING_DIR}/test
+  rm ${WORKING_DIR}/tag.br.out
 
 
-# -- Start Parsing.
+  # -- Start Parsing.
 
-cd ${PARSER_DIR}
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`pwd;`/deps/local/lib:"
+  cd ${PARSER_DIR}
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`pwd;`/deps/local/lib:"
 
-# --> Parse the first time using PTB model to get the scores
+  # --> Parse the first time using PTB model to get the scores
 
-rm -f -r ${WORKING_DIR}/test_score
-mkdir ${WORKING_DIR}/test_score
+  rm -f -r ${WORKING_DIR}/test_score
+  mkdir ${WORKING_DIR}/test_score
 
-./TurboParser --test --file_model=${MODEL_DIR}/ptb_parsing_model --file_test=${WORKING_DIR}/test --file_prediction=${WORKING_DIR}/ptb_single_predict_test --output_posterior=true --use_posterior=false --posterior_dir=${WORKING_DIR}/test_score
+  ./TurboParser --test --file_model=${MODEL_DIR}/ptb_parsing_model --file_test=${WORKING_DIR}/test --file_prediction=${WORKING_DIR}/ptb_single_predict_test --output_posterior=true --use_posterior=false --posterior_dir=${WORKING_DIR}/test_score
 
-# --> Parse the second time using PTB score as features to get the final results
-./TurboParser --test --file_model=${MODEL_DIR}/parsing_model --file_test=${WORKING_DIR}/test --file_prediction=${WORKING_DIR}/test_predict --output_posterior=false --use_posterior=true --posterior_dir=${WORKING_DIR}/test_score
+  # --> Parse the second time using PTB score as features to get the final results
+  ./TurboParser --test --file_model=${MODEL_DIR}/parsing_model --file_test=${WORKING_DIR}/test --file_prediction=${WORKING_DIR}/test_predict --output_posterior=false --use_posterior=true --posterior_dir=${WORKING_DIR}/test_score
 
-# -- Output the results.
-cd ${ROOT_DIR}
-cat ${WORKING_DIR}/test_predict > ${INPUT_FILE}.predict
+  # -- Output the results.
+  cd ${ROOT_DIR}
+  cat ${WORKING_DIR}/test_predict > ${INPUT_FILE}.predict
 
 fi

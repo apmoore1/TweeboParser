@@ -6,6 +6,8 @@ works correctly by testing it on different and same files.
 a stable code commit.
 '''
 
+import logging
+import threading
 from pathlib import Path
 import tempfile
 from traceback import format_exc
@@ -60,6 +62,27 @@ def _detailed_comparison(test_fp, gold_fp):
                             'Gold has: {}'.format(index, test_line, gold_line))
 
 
+def _process_file(process_fp):
+    '''
+    :param process_fp: File to run through the dependency parser.
+    :type process_fp: Path
+    :return: None
+    :raises SystemError: If the dependency parser run.sh script fails.
+    '''
+
+    this_dir = Path(__file__).absolute().parent.resolve()
+    run_file = this_dir.joinpath('..', 'run.sh').resolve()
+    try:
+        sub_process_params = ['bash', str(run_file),
+                              str(process_fp)]
+        if subprocess.call(sub_process_params):
+            raise SystemError('Could not run the Tweebo run script')
+
+    except Exception as e:
+        raise SystemError('Error {} during running the Tweebo run script, '
+                          'Stack Trace:\n {}'.format(repr(e), format_exc()))
+
+
 def test_detailed_comparison():
     '''
     Tests if the _detailed_comparison method works correctly. The method \
@@ -74,13 +97,13 @@ def test_detailed_comparison():
     '''
 
     this_dir = Path(__file__).absolute().parent.resolve()
-    sherlock_text_only = Path(this_dir, 'test data',
+    sherlock_text_only = Path(this_dir, 'test_data',
                               'sherlock_holmes_text_only.txt')
-    sherlock_text_only_copy = Path(this_dir, 'test data',
+    sherlock_text_only_copy = Path(this_dir, 'test_data',
                                    'sherlock_holmes_text_only_copy.txt')
     _detailed_comparison(sherlock_text_only_copy, sherlock_text_only)
 
-    sherlock_original = Path(this_dir, 'test data',
+    sherlock_original = Path(this_dir, 'test_data',
                              'sherlock_holmes.txt')
     with pytest.raises(Exception):
         _detailed_comparison(sherlock_original, sherlock_text_only)
@@ -99,14 +122,14 @@ def test_get_sha_digest():
     '''
 
     this_dir = Path(__file__).absolute().parent.resolve()
-    sherlock_fp = Path(this_dir, 'test data', 'sherlock_holmes_text_only.txt')
-    sherlock_copy_fp = Path(this_dir, 'test data',
+    sherlock_fp = Path(this_dir, 'test_data', 'sherlock_holmes_text_only.txt')
+    sherlock_copy_fp = Path(this_dir, 'test_data',
                             'sherlock_holmes_text_only_copy.txt')
     sherlock_digest = _get_sha_digest(sherlock_fp)
     sherlock_copy_digest = _get_sha_digest(sherlock_copy_fp)
     assert sherlock_digest == sherlock_copy_digest
 
-    sherlock_diff_fp = Path(this_dir, 'test data', 'sherlock_holmes.txt')
+    sherlock_diff_fp = Path(this_dir, 'test_data', 'sherlock_holmes.txt')
     sherlock_diff_digest = _get_sha_digest(sherlock_diff_fp)
     assert sherlock_digest != sherlock_diff_digest
 
@@ -128,9 +151,8 @@ def test_output():
     '''
 
     this_dir = Path(__file__).absolute().parent.resolve()
-    run_file = this_dir.joinpath('..', 'run.sh').resolve()
-    tweets_fp = this_dir.joinpath('test data', 'tweets.txt')
-    gold_test_fp = this_dir.joinpath('test data',
+    tweets_fp = this_dir.joinpath('test_data', 'tweets.txt')
+    gold_test_fp = this_dir.joinpath('test_data',
                                      'tweets.txt.predict')
     gold_test_digest = _get_sha_digest(gold_test_fp)
 
@@ -140,17 +162,59 @@ def test_output():
         result_fp = Path(temp_dir_fp, 'text_file.txt.predict')
         shutil.copyfile(str(tweets_fp),
                         str(text_fp))
-        sub_process_params = ['bash', str(run_file),
-                              str(text_fp)]
-        if subprocess.call(sub_process_params):
-            raise SystemError('Could not run the Tweebo run script')
+        _process_file(text_fp)
         result_digest = _get_sha_digest(result_fp)
         _detailed_comparison(result_fp, gold_test_fp)
         assert result_digest == gold_test_digest
 
     except Exception as e:
         shutil.rmtree(temp_dir_fp)
-        raise SystemError('Error {} during running the Tweebo run script, '
-                          'Stack Trace:\n {}'.format(repr(e), format_exc()))
+        print('Error {} during running the Tweebo run script, '
+              'Stack Trace:\n {}'.format(repr(e), format_exc()))
     else:
         shutil.rmtree(temp_dir_fp)
+
+
+def test_multi_threading_output():
+    '''
+    This checks that the run.sh script can be run on different threads. This \
+    is done by creating two threads and running two different files on the \
+    run script at the same time using the two threads. We then test to \
+    ensure the output file exists for each of the two inputted file exists \
+    and contains come content.
+    '''
+
+    logging.basicConfig(level=logging.WARNING,
+                        format='(%(threadName)-10s) %(message)s')
+    this_dir = Path(__file__).absolute().parent.resolve()
+    sherlock_fp_1 = this_dir.joinpath('test_data1',
+                                      'sherlock_holmes_text_only.txt')
+    sherlock_fp_2 = this_dir.joinpath('test_data2',
+                                      'sherlock_holmes_text_only.txt')
+    files_to_process = [sherlock_fp_1, sherlock_fp_2]
+    threads = []
+    for file_to_process in files_to_process:
+        thread = threading.Thread(target=_process_file,
+                                  args=(file_to_process,))
+        thread.setDaemon(True)
+        threads.append(thread)
+        thread.start()
+        logging.warning('starting %s processing %s',
+                        thread.getName(), str(file_to_process))
+    for thread in threads:
+        thread.join()
+        logging.warning('joining %s', thread.getName())
+    for thread in threads:
+        if thread.isAlive():
+            raise Exception('Thread {} is still alive'
+                            .format(thread.getName()))
+    sherlock_result_fp_1 = this_dir.joinpath('test_data1',
+                                             'sherlock_holmes_text_only'
+                                             '.txt.predict')
+    sherlock_result_fp_2 = this_dir.joinpath('test_data2',
+                                             'sherlock_holmes_text_only'
+                                             '.txt.predict')
+    result_files = [sherlock_result_fp_1, sherlock_result_fp_2]
+    for result_file in result_files:
+        assert result_file.is_file()
+        assert result_file.stat().st_size > 1000
