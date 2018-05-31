@@ -2,10 +2,11 @@
 Given the Sherlock Holmes book The Adventures of Sherlock Holmes, \
 by Arthur Conan Doyle form Project Gutenberg's. It saves all of the lines \
 in the book that contains text to the "sherlock_holmes_text_only.txt" file. \
-
-
-This file will be used to test the parser from each commit to see if a given \
-commit has changed the functionality of the parser.
+It then gets the first three Tweets of the training data that the parser is \
+trained on. These Tweets are are then used in the integration test to ensure \
+when the parser is updated that it still produces the same result. The \
+Sherlock Holmes files are used to test functions that are within the \
+intergration test.
 '''
 
 from pathlib import Path

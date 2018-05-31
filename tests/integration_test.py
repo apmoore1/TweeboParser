@@ -13,6 +13,8 @@ import subprocess
 import shutil
 import sha
 
+import pytest
+
 
 def _get_sha_digest(file_path):
     '''
@@ -31,6 +33,19 @@ def _get_sha_digest(file_path):
 
 
 def _detailed_comparison(test_fp, gold_fp):
+    '''
+    Ensures that each line in the test_fp file is the same as the lines in \
+    the gold_fp file.
+
+    :param test_fp: File path to a test file
+    :param gold_fp: File path to the gold standard file
+    :type test_fp: Path
+    :type gold_fp: Path
+    :return: None
+    :rtype: None
+    :raises Exception: If there is a line in the test_fp that is not the same \
+    as the corresponding line in the gold_fp file.
+    '''
 
     test_lines = list(test_fp.open('r', encoding='utf-8'))
     gold_lines = list(gold_fp.open('r', encoding='utf-8'))
@@ -43,6 +58,32 @@ def _detailed_comparison(test_fp, gold_fp):
             raise Exception('Test and Gold data not the same at line {}'
                             '\nTest has following text: {}\n'
                             'Gold has: {}'.format(index, test_line, gold_line))
+
+
+def test_detailed_comparison():
+    '''
+    Tests if the _detailed_comparison method works correctly. The method \
+    should raise an Exception when the two files are not the same. Should \
+    return None when the files are the same.
+
+    Tests:
+    1. Return None when the test file is sherlock_holmes_text_only_copy.txt \
+    and the gold file is sherlock_holmes_text_only.txt
+    2. Raise an Exception when the test file is sherlock_holmes.txt and the \
+    gold file is sherlock_holmes_text_only.txt
+    '''
+
+    this_dir = Path(__file__).absolute().parent.resolve()
+    sherlock_text_only = Path(this_dir, 'test data',
+                              'sherlock_holmes_text_only.txt')
+    sherlock_text_only_copy = Path(this_dir, 'test data',
+                                   'sherlock_holmes_text_only_copy.txt')
+    _detailed_comparison(sherlock_text_only_copy, sherlock_text_only)
+
+    sherlock_original = Path(this_dir, 'test data',
+                             'sherlock_holmes.txt')
+    with pytest.raises(Exception):
+        _detailed_comparison(sherlock_original, sherlock_text_only)
 
 
 def test_get_sha_digest():
