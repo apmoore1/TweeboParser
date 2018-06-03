@@ -148,7 +148,7 @@ Raw_Data		----	The json format file which contains all the annotation we have.
 
 ## Python API
 
-The API is very simple and assumes that you have installed TweeboParser as described above in the [Compiling](##Compiling) section.
+The API is very simple and assumes that you have installed TweeboParser as described above in the [Compiling](#compiling) section.
 
 ## Further reading:
 A Dependency Parser for Tweets
