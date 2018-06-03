@@ -1,11 +1,25 @@
 # encoding: utf-8
+'''
+Tests all the functions within tweebo.tweebo through the method \
+process_texts. The test functions within this module are the following:
+1. test_process_texts_stanford - tests that the ouput of process_texts \
+conforms to the Stanford styled output.
+2. test_process_texts_stanford - tests that the ouput of process_texts \
+conforms to the `CoNLL format\
+<http://universaldependencies.org/format.html>`_
+3. test_process_texts_exceptions - tests that the expected exceptions that \
+should be raised do raise in the correct situtation
+'''
+
+import pytest
 
 from tweebo import tweebo
 
 
-def test_process_texts():
+def test_process_texts_stanford():
     '''
-    Tests :py:func:`tweebo.process_texts`. We perform the following tests:
+    Tests :py:func:`tweebo.process_texts` where the output type is stanford. \
+    We perform the following tests:
     1. 2 unicode sentences
     2. 2 ASCII sentences
     3. 3 ASCII sentences where the 2nd sentence is empty.
@@ -86,8 +100,8 @@ def test_process_texts():
                  'pos': u'E'}]
     tokens_2 = [{'index': 1, 'word': u'RT',
                  'originalText': u'RT', 'pos': u'~'},
-                {'index': 2, 'word': u'@DjBlack_Peral',
-                 'originalText': u'@DjBlack_Peral', 'pos': u'@'},
+                {'index': 2, 'word': u'@DjBlack_Pearl',
+                 'originalText': u'@DjBlack_Pearl', 'pos': u'@'},
                 {'index': 3, 'word': u':', 'originalText': u':', 'pos': u'~'},
                 {'index': 4, 'word': u'wat', 'originalText': u'wat',
                  'pos': u'O'},
@@ -191,7 +205,7 @@ def test_process_texts():
     b_dep_2 = [{'dep': u'_', 'governor': -1, 'governorGloss': '$$NAN$$',
                 'dependent': 1, 'dependentGloss': u'RT'},
                {'dep': u'_', 'governor': -1, 'governorGloss': '$$NAN$$',
-                'dependent': 2, 'dependentGloss': u'@DjBlack_Peral'},
+                'dependent': 2, 'dependentGloss': u'@DjBlack_Pearl'},
                {'dep': u'_', 'governor': -1, 'governorGloss': u'$$NAN$$',
                 'dependent': 3, 'dependentGloss': u':'},
                {'dep': 'ROOT', 'governor': 0, 'governorGloss': 'ROOT',
@@ -219,35 +233,149 @@ def test_process_texts():
                         'basicDependencies': b_dep_0, 'tokens': tokens_0},
                        {'index': 1,
                         'basicDependencies': b_dep_1, 'tokens': tokens_1}]
-    assert expected_return == tweebo.process_texts(test_sentences)
+    assert expected_return == tweebo.process_texts(test_sentences,
+                                                   output_type='stanford')
 
     test_sentences = ["I predict I won't win a single game I bet on. "
                       "Got Cliff Lee today, so if he loses its on me RT "
                       "@e_one: Texas (cont) http://tl.gd/6meogh",
-                      "RT @DjBlack_Peral: wat muhfuckaz wearin 4 the lingerie "
+                      "RT @DjBlack_Pearl: wat muhfuckaz wearin 4 the lingerie "
                       "party?????"]
     expected_return = [{'index': 0,
                         'basicDependencies': b_dep_0, 'tokens': tokens_0},
                        {'index': 1,
                         'basicDependencies': b_dep_2, 'tokens': tokens_2}]
-    assert expected_return == tweebo.process_texts(test_sentences)
+    assert expected_return == tweebo.process_texts(test_sentences,
+                                                   output_type='stanford')
 
-    assert tweebo.process_texts(['', '']) == [{'index': 0,
-                                               'basicDependencies': [],
-                                               'tokens': []},
-                                              {'index': 1,
-                                               'basicDependencies': [],
-                                               'tokens': []}]
+    expected_return = [{'index': 0,
+                        'basicDependencies': [], 'tokens': []},
+                       {'index': 1,
+                        'basicDependencies': [], 'tokens': []}]
+    assert expected_return == tweebo.process_texts(['', ''],
+                                                   output_type='stanford')
 
     test_sentences = ["I predict I won't win a single game I bet on. "
                       "Got Cliff Lee today, so if he loses its on me RT "
                       "@e_one: Texas (cont) http://tl.gd/6meogh",
                       "              ",
-                      "RT @DjBlack_Peral: wat muhfuckaz wearin 4 the lingerie "
+                      "RT @DjBlack_Pearl: wat muhfuckaz wearin 4 the lingerie "
                       "party?????"]
     expected_return = [{'index': 0,
                         'basicDependencies': b_dep_0, 'tokens': tokens_0},
                        {'index': 1, 'basicDependencies': [], 'tokens': []},
                        {'index': 2,
                         'basicDependencies': b_dep_2, 'tokens': tokens_2}]
+    assert expected_return == tweebo.process_texts(test_sentences,
+                                                   output_type='stanford')
+
+
+def test_process_texts_conll():
+    '''
+    Tests :py:func:`tweebo.process_texts` where the output type is conll. \
+    We perform the following tests:
+    1. 2 unicode sentences
+    2. 2 ASCII sentences
+    3. 3 ASCII sentences where the 2nd sentence is empty.
+    '''
+
+    conll_0 = (u'1\tI\t_\tO\tO\t_\t2\t_\n'
+               u'2\tpredict\t_\tV\tV\t_\t0\t_\n'
+               u'3\tI\t_\tO\tO\t_\t4\t_\n'
+               u"4\twon't\t_\tV\tV\t_\t2\t_\n"
+               u'5\twin\t_\tV\tV\t_\t4\t_\n'
+               u'6\ta\t_\tD\tD\t_\t8\t_\n'
+               u'7\tsingle\t_\tA\tA\t_\t8\t_\n'
+               u'8\tgame\t_\tN\tN\t_\t5\t_\n'
+               u'9\tI\t_\tO\tO\t_\t10\t_\n'
+               u'10\tbet\t_\tV\tV\t_\t8\t_\n'
+               u'11\ton\t_\tP\tP\t_\t10\tMWE\n'
+               u'12\t.\t_\t,\t,\t_\t-1\t_\n'
+               u'13\tGot\t_\tV\tV\t_\t0\t_\n'
+               u'14\tCliff\t_\t^\t^\t_\t15\tMWE\n'
+               u'15\tLee\t_\t^\t^\t_\t13\t_\n'
+               u'16\ttoday\t_\tN\tN\t_\t13\t_\n'
+               u'17\t,\t_\t,\t,\t_\t-1\t_\n'
+               u'18\tso\t_\tP\tP\t_\t0\t_\n'
+               u'19\tif\t_\tP\tP\t_\t22\t_\n'
+               u'20\the\t_\tO\tO\t_\t21\t_\n'
+               u'21\tloses\t_\tV\tV\t_\t19\t_\n'
+               u'22\tits\t_\tL\tL\t_\t18\t_\n'
+               u'23\ton\t_\tP\tP\t_\t22\t_\n'
+               u'24\tme\t_\tO\tO\t_\t23\t_\n'
+               u'25\tRT\t_\t~\t~\t_\t-1\t_\n'
+               u'26\t@e_one\t_\t@\t@\t_\t-1\t_\n'
+               u'27\t:\t_\t~\t~\t_\t-1\t_\n'
+               u'28\tTexas\t_\t^\t^\t_\t21\t_\n'
+               u'29\t(\t_\t,\t,\t_\t-1\t_\n'
+               u'30\tcont\t_\t~\t~\t_\t-1\t_\n'
+               u'31\t)\t_\t,\t,\t_\t-1\t_\n'
+               u'32\thttp://tl.gd/6meogh\t_\tU\tU\t_\t-1\t_')
+    conll_1 = (u'1\tWednesday\t_\t^\t^\t_\t2\tMWE\n'
+               u'2\t27th\t_\tA\tA\t_\t0\t_\n'
+               u'3\toctober\t_\t^\t^\t_\t1\tMWE\n'
+               u"4\t2010\t_\t$\t$\t_\t3\tMWE\n"
+               u'5\t.\t_\t,\t,\t_\t-1\t_\n'
+               u'6\t》have\t_\tV\tV\t_\t0\t_\n'
+               u'7\ta\t_\tD\tD\t_\t9\t_\n'
+               u'8\tnice\t_\tA\tA\t_\t9\t_\n'
+               u'9\tday\t_\tN\tN\t_\t6\t_\n'
+               u'10\t:)\t_\tE\tE\t_\t-1\t_')
+    conll_2 = (u'1\tRT\t_\t~\t~\t_\t-1\t_\n'
+               u'2\t@DjBlack_Pearl\t_\t@\t@\t_\t-1\t_\n'
+               u'3\t:\t_\t~\t~\t_\t-1\t_\n'
+               u"4\twat\t_\tO\tO\t_\t0\t_\n"
+               u'5\tmuhfuckaz\t_\tN\tN\t_\t6\t_\n'
+               u'6\twearin\t_\tV\tV\t_\t4\t_\n'
+               u'7\t4\t_\tP\tP\t_\t6\t_\n'
+               u'8\tthe\t_\tD\tD\t_\t10\t_\n'
+               u'9\tlingerie\t_\tN\tN\t_\t10\t_\n'
+               u'10\tparty\t_\tN\tN\t_\t7\t_\n'
+               u'11\t?????\t_\t,\t,\t_\t-1\t_')
+
+    test_sentences = [u"I predict I won't win a single game I bet on. "
+                      u"Got Cliff Lee today, so if he loses its on me RT "
+                      u"@e_one: Texas (cont) http://tl.gd/6meogh",
+                      u"Wednesday 27th october 2010. 》have a nice day :)"]
+    expected_return = [conll_0, conll_1]
     assert expected_return == tweebo.process_texts(test_sentences)
+
+    test_sentences = ["I predict I won't win a single game I bet on. "
+                      "Got Cliff Lee today, so if he loses its on me RT "
+                      "@e_one: Texas (cont) http://tl.gd/6meogh",
+                      "RT @DjBlack_Pearl: wat muhfuckaz wearin 4 the lingerie "
+                      "party?????"]
+    expected_return = [conll_0, conll_2]
+    assert expected_return == tweebo.process_texts(test_sentences,
+                                                   output_type='conll')
+
+    assert tweebo.process_texts(['', '']) == ['', '']
+
+    test_sentences = ["I predict I won't win a single game I bet on. "
+                      "Got Cliff Lee today, so if he loses its on me RT "
+                      "@e_one: Texas (cont) http://tl.gd/6meogh",
+                      "              ",
+                      "RT @DjBlack_Pearl: wat muhfuckaz wearin 4 the lingerie "
+                      "party?????"]
+    expected_return = [conll_0, '', conll_2]
+    assert expected_return == tweebo.process_texts(test_sentences)
+
+
+def test_process_texts_exceptions():
+    '''
+    Tests the different excpetions that should be raises by the process_texts \
+    method.
+    1. ValueError: This should be raised when the output_type is not \
+    `stanford` or `conll`
+    2. TypeError: This should be raised as the texts input is not a list.
+    3. TypeError: This should be raises as the texts input is a list of ints \
+    not a list of Strings.
+    '''
+
+    test_sentence = ["Some text to process"]
+    with pytest.raises(ValueError):
+        tweebo.process_texts(test_sentence, output_type='not correct')
+    with pytest.raises(TypeError):
+        tweebo.process_texts('some text to process')
+    with pytest.raises(TypeError):
+        tweebo.process_texts([1, 2])

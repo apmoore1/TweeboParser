@@ -1,3 +1,10 @@
+'''
+Python API to the TweeboParser. Module only caontains one function:
+1. process_texts - Given a list of texts will process each text through \
+TweeboParser and return a list of the same size in two different output \
+formats: 1. CoNLL and 2. Stanford.
+'''
+
 from pathlib import Path
 import tempfile
 from traceback import format_exc
@@ -28,7 +35,44 @@ def _process_file(process_fp):
                           'Stack Trace:\n {}'.format(repr(e), format_exc()))
 
 
-def _process_result(result_fp):
+def _to_conll(result_fp):
+    '''
+    :param result_fp: path to the file that contains `CoNLL formatted\
+    <http://universaldependencies.org/format.html>`_ \
+    dependency data. Where each tweet is seprated by a line.
+    :type result_fp: Path
+    :return: A list of Strings where each String is each Tweets CoNLL \
+    output. If the Tweet was empty e.g. `` then `` will be returned.
+    :rtype: list[str]
+    '''
+    conll_strings = []
+    conll_string = []
+    last_line = None
+    with result_fp.open('r', encoding='utf-8') as result_file:
+
+        for line in result_file:
+            line = line.strip()
+            if last_line == '' and line == '':
+                continue
+            elif line == '':
+                # If empty sentence then add empty String
+                if conll_string == [EMPTY_TOKEN]:
+                    conll_strings.append('')
+                else:
+                    conll_strings.append('\n'.join(conll_string))
+                conll_string = []
+            else:
+                line_data = line.split('\t')
+                token_text = line_data[1].strip()
+                if token_text == EMPTY_TOKEN:
+                    conll_string.append(EMPTY_TOKEN)
+                else:
+                    conll_string.append(line)
+            last_line = line
+        return conll_strings
+
+
+def _to_stanford(result_fp):
     '''
     :param result_fp: path to the file that contains `CoNLL formatted\
     <http://universaldependencies.org/format.html>`_ \
@@ -156,43 +200,60 @@ def _process_result(result_fp):
         return tweets
 
 
-def process_texts(texts):
+def process_texts(texts, output_type='conll'):
     '''
     :param texts: List of Strings that to dependency parse with Tweebo
+    :param output_type: String specifying the output type. Either `stanford` \
+    or `conll`.
     :type texts: list[str]
-    :return: Dependency parsed Strings. See :py:func:`_process_result` return \
-    for more details on the return value.
-    :rtype: list[Dict]
-    :raises TypeError: If the list of texts are not Strings or unicode strings
+    :type output_type: str
+    :return: Depending on the output_type for `stanford` see \
+    :py:func:`_to_stanford`. For conll see :py:func:`_to_conll`
+    :rtype: either list[Dict] or list[str]
+    :raises TypeError: If the texts are not a list of Strings or unicode \
+    Strings.
+    :raises ValueError: If the output_type is not equal to `stanford` or \
+    `conll`
     '''
 
+    if not isinstance(texts, list):
+        raise TypeError('Expected texts to be of type list not {}'
+                        .format(type(texts)))
+
+    allowed_output_types = ['stanford', 'conll']
+    output_type = output_type.lower()
+    if output_type not in allowed_output_types:
+        raise ValueError('output_type has to be one of the following: {}\n'
+                         'Not {}'.format(allowed_output_types, output_type))
     temp_dir_fp = tempfile.mkdtemp()
     try:
         text_fp = Path(temp_dir_fp, 'text_file.txt')
         # Add the data to the text file
         with text_fp.open('w', encoding='utf-8') as text_file:
             for index, text in enumerate(texts):
+                if isinstance(text, str):
+                    text = text.decode('utf-8')
+                elif not isinstance(text, unicode):
+                    raise TypeError('The Strings in text must be of '
+                                    'str or unicode not {}'
+                                    .format(type(text)))
+                print(text)
                 text = text.strip()
                 if not text:
                     print('does this happen')
                     text_file.write(EMPTY_TOKEN)
                 else:
-                    if isinstance(text, str):
-                        text = text.decode('utf-8')
-                    elif not isinstance(text, unicode):
-                        raise TypeError('The Strings in text must be of '
-                                        'str or unicode not {}'
-                                        .format(type(text)))
                     text_file.write(text)
                 if index != (len(texts) - 1):
                     text_file.write(u'\n')
         _process_file(text_fp)
         result_fp = Path(temp_dir_fp, 'text_file.txt.predict')
-        return _process_result(result_fp)
-
-    except Exception as e:
+        if output_type == 'stanford':
+            return _to_stanford(result_fp)
+        else:
+            return _to_conll(result_fp)
+    except Exception as error:
         shutil.rmtree(temp_dir_fp)
-        print('Error {} during running the Tweebo run script, '
-              'Stack Trace:\n {}'.format(repr(e), format_exc()))
+        raise error
     else:
         shutil.rmtree(temp_dir_fp)
