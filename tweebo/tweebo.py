@@ -237,10 +237,8 @@ def process_texts(texts, output_type='conll'):
                     raise TypeError('The Strings in text must be of '
                                     'str or unicode not {}'
                                     .format(type(text)))
-                print(text)
                 text = text.strip()
                 if not text:
-                    print('does this happen')
                     text_file.write(EMPTY_TOKEN)
                 else:
                     text_file.write(text)
