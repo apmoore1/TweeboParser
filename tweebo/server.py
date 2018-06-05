@@ -3,6 +3,9 @@
 Flask API for the TweeboParser.
 '''
 
+import argparse
+import multiprocessing
+
 from flask import Flask, request, jsonify
 from flask_restful import Resource, Api, abort
 from marshmallow import Schema, fields, ValidationError
@@ -67,5 +70,24 @@ class TweeboParser(Resource):
 
 api.add_resource(TweeboParser, '/')
 
+description = 'Starts the API server for TweeboParser'
+parser = argparse.ArgumentParser(prog='TweeboParser Server',
+                                 description=description)
+threads_help = 'The number of threads the server will use (default: number '\
+               'of threads equal to number of CPUs)'
+parser.add_argument('-t', '--threads', type=int,
+                    help=threads_help, default=multiprocessing.cpu_count())
+port_help = 'Port number to run the server from (default: 8000)'
+parser.add_argument('-p', '--port', type=int,
+                    help=port_help, default=8000)
+hostname_help = 'Hostname/IP address on which the server listen to '\
+                '(default: 127.0.0.1)'
+parser.add_argument('--hostname', type=str,
+                    help=hostname_help, default='127.0.0.1')
+
 if __name__ == '__main__':
-    serve(app, port=8000, threads=4)
+    args = parser.parse_args()
+    print('Serving on: {}:{}'.format(args.hostname, args.port))
+    print('Number of threads allocated: {}'.format(args.threads))
+    serve(app, host=args.hostname, port=args.port,
+          threads=args.threads)
