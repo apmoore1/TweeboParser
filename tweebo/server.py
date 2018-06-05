@@ -4,6 +4,7 @@ Flask API for the TweeboParser.
 '''
 
 import argparse
+import logging
 import multiprocessing
 
 from flask import Flask, request, jsonify
@@ -81,13 +82,16 @@ port_help = 'Port number to run the server from (default: 8000)'
 parser.add_argument('-p', '--port', type=int,
                     help=port_help, default=8000)
 hostname_help = 'Hostname/IP address on which the server listen to '\
-                '(default: 127.0.0.1)'
+                '(default: 0.0.0.0)'
 parser.add_argument('--hostname', type=str,
-                    help=hostname_help, default='127.0.0.1')
+                    help=hostname_help, default='0.0.0.0')
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(levelname)s: %(message)s',
+                        level=logging.INFO)
+
     args = parser.parse_args()
-    print('Serving on: {}:{}'.format(args.hostname, args.port))
-    print('Number of threads allocated: {}'.format(args.threads))
+    logging.info('Serving on: {}:{}'.format(args.hostname, args.port))
+    logging.info('Number of threads allocated: {}'.format(args.threads))
     serve(app, host=args.hostname, port=args.port,
           threads=args.threads)
