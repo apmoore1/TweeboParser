@@ -67,6 +67,7 @@ def _to_conll(result_fp):
                 if token_text == EMPTY_TOKEN:
                     conll_string.append(EMPTY_TOKEN)
                 else:
+                    line += '\t_\t_'
                     conll_string.append(line)
             last_line = line
         return conll_strings
